@@ -322,11 +322,9 @@ class Ujian extends CI_Controller
 				$pc_urut_soal	    = explode("|", $urut_soal[$i]); //pecah data wadah list jawaban
 				$pc_urut_soal_jwb 	= empty($pc_urut_soal[2]) ? "''" : "'{$pc_urut_soal[2]}'"; //List jawaban user
 				$ambil_soal 	    = $this->tes->get_ujian_list_user($pc_urut_soal_jwb, $pc_urut_soal[1], $paket_soal_id);
-				// echo $this->db->last_query()."<br>";
 				$soal_urut_ok[]     = $ambil_soal;
 			}
-			// die("selesai");
-
+			
 			$soal_urut_ok = $soal_urut_ok;
 
 			//Pengambilan isi dari data list ujian user

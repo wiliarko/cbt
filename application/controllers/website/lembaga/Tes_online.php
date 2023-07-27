@@ -508,6 +508,8 @@ class Tes_online extends CI_Controller
 
 		$tbl = $this->tbl_paket_soal;
 		$input = $this->general->update_data($tbl, $data, $paket_soal_id);
+		
+		unlink(APPPATH."../tmp/paket_soal/by_id_".$paket_soal_id.".txt");
 
 		$urly = 'admin/paket-soal';
 		$urlx = 'admin/edit-paket-soal/' . $id_paket_soal;

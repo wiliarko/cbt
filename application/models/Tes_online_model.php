@@ -145,8 +145,17 @@ class Tes_online_model extends CI_Model
 
     public function get_paket_soal_by_id($paket_data_id)
     {
-        return $this->db->select('*')
+        if(file_exists(APPPATH."../tmp/paket_soal/by_id_".$paket_data_id.".txt")){
+            $data = json_decode(file_get_contents(APPPATH."../tmp/paket_soal/by_id_".$paket_data_id.".txt"));
+            return $data;
+        }else{
+            $this->load->helper('file');
+            $hasil = $this->db->select('*')
             ->get_where('v_paket_soal', array('paket_soal_id' => $paket_data_id, 'is_enable' => 1))->row();
+            
+            write_file(APPPATH."../tmp/paket_soal/by_id_".$paket_data_id.".txt", json_encode($hasil));
+            return $hasil;
+        }
     }
 
     public function get_total_mode_jwb($paket_soal_id)
