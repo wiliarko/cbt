@@ -25,10 +25,10 @@ defined('BASEPATH') or exit('No direct script access allowed');
 | Choose Environment Type 'Local' or 'Server'.
 |
 */
-$env_type = 'Server';
+$env_type = 'Local';
 
 if ($env_type == 'Local') {
-	$root = "http://localhost/cbt/";
+	$root = "http://192.168.56.11/cbt/";
 	/*
     |--------------------------------------------------------------------------
     | Base URL

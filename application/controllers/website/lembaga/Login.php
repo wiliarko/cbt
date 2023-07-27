@@ -26,7 +26,7 @@ class Login extends CI_Controller {
             redirect('admin/login');
         } else { */
         $decode = $this->encryption->decrypt($data['login_admin'][0]['password']);
-
+            // die($decode);
         if($data['login_admin'] && $decode == $data['password']){
             $newdata = array(
                     'user_id' => $data['login_admin'][0]['user_id'],

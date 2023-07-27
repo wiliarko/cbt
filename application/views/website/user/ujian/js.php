@@ -490,6 +490,26 @@
         });
     }
 
+    async function simpan_db() {
+        //simpan_sementara();
+        var form = $("#ujian");
+
+        $.ajax({
+            type: "POST",
+            url: base_url + "website/user/Ujian/simpan_satu_db",
+            data: form.serialize(),
+            dataType: 'json',
+            success: function(data) {
+                if (data.status == "gagal") {
+                    alert("Gagal menyimpan jawaban. Mohon ulangi pilih jawaban anda kembali!");
+                }
+            },
+            error: function(request, status, error) {
+                alert("Terjadi kesalahan. Silahkan ulangi kembali!");
+            }
+        });
+    }
+
     //Partial load navigasi soal
     function simpan_sementara_satu(nums, opsis) {
         var ragus = $("input[name=rg_" + nums + "]").val();
@@ -652,7 +672,7 @@
                 id: id_tes
             },
             beforeSend: function() {
-                simpan();
+                simpan_db();
             },
             success: function(r) {
                 if (r.status) {

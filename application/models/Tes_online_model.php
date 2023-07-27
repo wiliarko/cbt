@@ -249,8 +249,21 @@ class Tes_online_model extends CI_Model
     public function get_sesi_pelaksanaan_selected($sesi_pelaksana_id)
     {
         $now = date('Y-m-d H:i:s');
-        return $this->db->order_by('waktu_mulai ASC')
+        
+        if(file_exists(APPPATH."../tmp/sesi_pelaksanaan/selected_".$sesi_pelaksana_id.".txt")){
+            $data = json_decode(file_get_contents(APPPATH."../tmp/sesi_pelaksanaan/selected_".$sesi_pelaksana_id.".txt"));
+            if($data->tgl >= $now){
+                return $data->input;
+            }
+        }else{
+            $this->load->helper('file');
+            $hasil = $this->db->order_by('waktu_mulai ASC')
             ->get_where('v_sesi_pelaksanaan', array('sesi_pelaksanaan_id' => $sesi_pelaksana_id, 'batas_pengerjaan >=' => $now))->row();
+            
+            $data_save=array("tgl"=>$hasil->batas_pengerjaan,"input"=>$hasil);
+            write_file(APPPATH."../tmp/sesi_pelaksanaan/selected_".$sesi_pelaksana_id.".txt", json_encode($data_save));
+            return $hasil;
+        }
     }
 
     public function get_sesi_pelaksanaan_pembahasan($sesi_pelaksana_id)
@@ -774,7 +787,7 @@ class Tes_online_model extends CI_Model
 
     public function get_checking_ujian_non_buku($sesi_pelaksana_id, $paket_soal_id, $user_id)
     {
-        $query = $this->db->select('id, user_id, user_no, user_name, user_email, list_soal, list_jawaban, tgl_mulai, tgl_selesai, status')
+        $query = $this->db->select('id, user_id, user_no, user_name, user_email, list_soal, list_jawaban, tgl_mulai, tgl_selesai, status,updated_datetime')
             ->get_where('ujian', array('sesi_pelaksanaan_id' => $sesi_pelaksana_id, 'paket_soal_id' => $paket_soal_id, 'user_id' => $user_id, 'status' => 0, 'is_enable' => 1))->row();
 
         if ($query) {
@@ -892,12 +905,20 @@ class Tes_online_model extends CI_Model
 
     public function get_ujian_list_user($pc_urut_soal_jwb, $pc_urut_soal_id, $paket_soal_id)
     {
-        $this->db->select("*, {$pc_urut_soal_jwb} AS jawaban");
-        $this->db->from('v_bank_soal');
-        $this->db->where('bank_soal_id', $pc_urut_soal_id);
-        $this->db->where('paket_soal_id', $paket_soal_id);
-        $this->db->where('is_enable', 1);
-        return $this->db->get()->row();
+        if(file_exists(APPPATH."../tmp/bank_soal/".$pc_urut_soal_id."_".$paket_soal_id.".txt")){
+            $data = file_get_contents(APPPATH."../tmp/bank_soal/".$pc_urut_soal_id."_".$paket_soal_id.".txt");
+            return json_decode($data);    
+        }else{
+            $this->load->helper('file');
+            $this->db->select("*, {$pc_urut_soal_jwb} AS jawaban");
+            $this->db->from('v_bank_soal');
+            $this->db->where('bank_soal_id', $pc_urut_soal_id);
+            $this->db->where('paket_soal_id', $paket_soal_id);
+            $this->db->where('is_enable', 1);
+            $hasil = $this->db->get()->row();
+            write_file(APPPATH."../tmp/bank_soal/".$pc_urut_soal_id."_".$paket_soal_id.".txt", json_encode($hasil));
+            return $hasil;
+        }
     }
 
     public function get_paket_soal_buku($buku_id, $detail_buku_id)

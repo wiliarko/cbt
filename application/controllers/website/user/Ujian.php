@@ -236,6 +236,71 @@ class Ujian extends CI_Controller
 				$this->session->set_flashdata('portal_error', 'Terjadi kesalahan saat membuka ujian. Silahkan membuka ulang tes anda kembali <i>atau</i> Jika daftar ujian anda hilang silahkan LOGOUT dan LOGIN ulang!');
 				redirect('dashboard');
 			}
+		}else{
+			if(file_exists(APPPATH."../tmp/ujian/".$ujian_data->id.".txt")){
+				$data_ujian = json_decode(file_get_contents(APPPATH."../tmp/ujian/".$ujian_data->id.".txt"));
+				if($data_ujian->tgl > $ujian_data->updated_datetime){
+					$id_tes = $data_ujian->id_tes;
+					$input 	= (array)$data_ujian->input;
+					$d_simpan = [];
+					$list_jawaban 	= "";
+					for ($i = 1; $i < $input['jml_soal']; $i++) {
+						$_tmode	    = "id_group_mode_jwb" . $i;
+						$_imode     = $input[$_tmode];
+
+						$_tjawabes 	= "essay_" . $i;
+						$_tjawab 	= "opsi_" . $i;
+						if (!empty($input[$_tjawab])) {
+							if (count($input[$_tjawab]) > 0) {
+								$tampung_jawaban = array();
+								for ($f = 0; $f < count($input[$_tjawab]); $f++) {
+									$jwb_exp = explode("|", $input[$_tjawab][$f]);
+									$tampung_jawaban[] = $jwb_exp[0];
+								}
+								$jawab_order = implode(":", $tampung_jawaban);
+							} else {
+								$jawab_order = null;
+							}
+						} else {
+							$jawab_order = null;
+						}
+						$_tidgroup	= "id_group_soal_" . $i;
+						$_tidsoal 	= "id_bank_soal_" . $i;
+						$_ragu 		= "rg_" . $i;
+						$_audio_g 	= "audio_group_" . $i;
+						$_audio_s	= "audio_soal_" . $i;
+						if ($input[$_audio_g] != 0) {
+							$audio_g_ = $input[$_audio_g];
+						} else {
+							$audio_g_ = 0;
+						}
+
+						if ($input[$_audio_s] != 0) {
+							$audio_s_ = $input[$_audio_s];
+						} else {
+							$audio_s_ = 0;
+						}
+
+						if ($_imode == 1) { //1 Pilihan ganda 2 Essay
+							$jawaban_ 	= empty($jawab_order) ? "" : $jawab_order;
+							$list_jawaban	.= $input[$_tidgroup] . "|" . $input[$_tidsoal] . "|" . $jawaban_ . "|" . $input[$_ragu] . "|" . $audio_g_ . "|" . $audio_s_ . ",";
+						} else {
+							$jawaban_ 	= empty($input[$_tjawabes]) ? "" : $input[$_tjawabes];
+							$list_jawaban	.= $input[$_tidgroup] . "|" . $input[$_tidsoal] . "|" . $jawaban_ . "|" . $input[$_ragu] . "|" . $audio_g_ . "|" . $_audio_s . ",";
+						}
+					}
+					$list_jawaban	= substr($list_jawaban, 0, -1);
+					$d_simpan = [
+						'list_jawaban' => $list_jawaban,
+						'updated_datetime' => date('Y-m-d H:i:s')
+					];
+					$ujian_data->list_jawaban = $list_jawaban;
+
+					// Simpan jawaban
+					$tbl_ujian = $this->tbl_ujian;
+					$this->general->update_data($tbl_ujian, $d_simpan, $id_tes);
+				}
+			}
 		}
 
 		try {
@@ -257,8 +322,10 @@ class Ujian extends CI_Controller
 				$pc_urut_soal	    = explode("|", $urut_soal[$i]); //pecah data wadah list jawaban
 				$pc_urut_soal_jwb 	= empty($pc_urut_soal[2]) ? "''" : "'{$pc_urut_soal[2]}'"; //List jawaban user
 				$ambil_soal 	    = $this->tes->get_ujian_list_user($pc_urut_soal_jwb, $pc_urut_soal[1], $paket_soal_id);
+				// echo $this->db->last_query()."<br>";
 				$soal_urut_ok[]     = $ambil_soal;
 			}
+			// die("selesai");
 
 			$soal_urut_ok = $soal_urut_ok;
 
@@ -470,6 +537,32 @@ class Ujian extends CI_Controller
 	public function simpan_satu()
 	{
 		try {
+			// Decrypt Id
+			$id_tes = $this->encryption->decrypt($this->input->post('id', true));
+
+			$input 	= $this->input->post(null, true);
+			$data = array(
+				"tgl"=>date('Y-m-d H:i:s'),
+				"id_tes"=>$id_tes,
+				"input"=>$input
+			);
+			if ( ! write_file(APPPATH."../tmp/ujian/".$id_tes.".txt", json_encode($data)))
+			{
+				$this->output_json(['status' => "gagal"]);
+			}
+			else
+			{
+				$this->output_json(['status' => "sukses"]);
+			}
+		} catch (Exception $e) {
+			$this->output_json(['status' => "gagal"]);
+		}
+	}
+
+
+	public function simpan_satu_db()
+	{
+		try {
 			$this->db->trans_begin();
 			// Decrypt Id
 			$id_tes = $this->encryption->decrypt($this->input->post('id', true));
@@ -524,7 +617,8 @@ class Ujian extends CI_Controller
 			}
 			$list_jawaban	= substr($list_jawaban, 0, -1);
 			$d_simpan = [
-				'list_jawaban' => $list_jawaban
+				'list_jawaban' => $list_jawaban,
+				'updated_datetime' => date('Y-m-d H:i:s')
 			];
 
 			// Simpan jawaban

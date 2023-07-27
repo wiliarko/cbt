@@ -65,6 +65,7 @@
         <div id="lembar_soal" class="col-sm-12 col-md-8 mb-3">
             <?=form_open('', array('id'=>'ujian'), array('id'=> $ujian_id, 'random_secure' => $random_secure));?>
                 <h3 class="box-title" style="display:none;"><span class="badge bg-blue">Soal #<span id="soalke"></span> </span></h3>
+                <span id="soal_append"></span>
                 <?=$lembar_jawaban?>
                 <input type="hidden" name="jml_soal" id="jml_soal" value="<?=$jumlah_soal; ?>">
             <?=form_close();?>
