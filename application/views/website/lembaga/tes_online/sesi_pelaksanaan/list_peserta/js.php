@@ -106,12 +106,13 @@
     }
 
     function hitung_ulang_ujian(ujian_id) {
+        $('input[name=id]').val(ujian_id);
+        var form = $("#ujian");
+        
         $.ajax({
             url: "<?php echo base_url(); ?>website/user/Ujian/simpan_akhir",
             method: "POST",
-            data: {
-                id: ujian_id
-            },
+            data: form.serialize(),
             beforeSend: function() {
                 return confirm("Apakah anda yakin menghitung ulang hasil ujian peserta ini?");
             },
@@ -125,6 +126,6 @@
             error: function(request, status, error) {
                 alert(request.responseText);
             }
-        })
+        });
     }
 </script>

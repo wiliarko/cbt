@@ -557,6 +557,74 @@ class Ujian extends CI_Controller
 		}
 	}
 
+	public function generate_jawaban_from_file($id_ujian){
+		if(file_exists(APPPATH."../tmp/ujian/".$id_ujian.".txt")){
+			$data_ujian = json_decode(file_get_contents(APPPATH."../tmp/ujian/".$id_ujian.".txt"));
+			if($data_ujian->id_tes == $id_ujian){
+				$id_tes = $data_ujian->id_tes;
+				$input 	= (array)$data_ujian->input;
+				$d_simpan = [];
+				$list_jawaban 	= "";
+				for ($i = 1; $i < $input['jml_soal']; $i++) {
+					$_tmode	    = "id_group_mode_jwb" . $i;
+					$_imode     = $input[$_tmode];
+
+					$_tjawabes 	= "essay_" . $i;
+					$_tjawab 	= "opsi_" . $i;
+					if (!empty($input[$_tjawab])) {
+						if (count($input[$_tjawab]) > 0) {
+							$tampung_jawaban = array();
+							for ($f = 0; $f < count($input[$_tjawab]); $f++) {
+								$jwb_exp = explode("|", $input[$_tjawab][$f]);
+								$tampung_jawaban[] = $jwb_exp[0];
+							}
+							$jawab_order = implode(":", $tampung_jawaban);
+						} else {
+							$jawab_order = null;
+						}
+					} else {
+						$jawab_order = null;
+					}
+					$_tidgroup	= "id_group_soal_" . $i;
+					$_tidsoal 	= "id_bank_soal_" . $i;
+					$_ragu 		= "rg_" . $i;
+					$_audio_g 	= "audio_group_" . $i;
+					$_audio_s	= "audio_soal_" . $i;
+					if ($input[$_audio_g] != 0) {
+						$audio_g_ = $input[$_audio_g];
+					} else {
+						$audio_g_ = 0;
+					}
+
+					if ($input[$_audio_s] != 0) {
+						$audio_s_ = $input[$_audio_s];
+					} else {
+						$audio_s_ = 0;
+					}
+
+					if ($_imode == 1) { //1 Pilihan ganda 2 Essay
+						$jawaban_ 	= empty($jawab_order) ? "" : $jawab_order;
+						$list_jawaban	.= $input[$_tidgroup] . "|" . $input[$_tidsoal] . "|" . $jawaban_ . "|" . $input[$_ragu] . "|" . $audio_g_ . "|" . $audio_s_ . ",";
+					} else {
+						$jawaban_ 	= empty($input[$_tjawabes]) ? "" : $input[$_tjawabes];
+						$list_jawaban	.= $input[$_tidgroup] . "|" . $input[$_tidsoal] . "|" . $jawaban_ . "|" . $input[$_ragu] . "|" . $audio_g_ . "|" . $_audio_s . ",";
+					}
+				}
+				$list_jawaban	= substr($list_jawaban, 0, -1);
+				$d_simpan = [
+					'list_jawaban' => $list_jawaban,
+					'updated_datetime' => date('Y-m-d H:i:s')
+				];
+				// $ujian_data->list_jawaban = $list_jawaban;
+				// die("ok");
+				// Simpan jawaban
+				$tbl_ujian = $this->tbl_ujian;
+				$this->general->update_data($tbl_ujian, $d_simpan, $id_tes);
+				echo "berhasil";die;
+				
+			}
+		}
+	}
 
 	public function simpan_satu_db()
 	{
@@ -752,6 +820,7 @@ class Ujian extends CI_Controller
 
 			// Get Jawaban
 			$list_jawaban = $this->tes->get_jawaban_ujian($id_tes);
+			// var_dump($list_jawaban);die;
 
 			// Pecah Jawaban
 			$pc_jawaban = explode(",", $list_jawaban);

@@ -23,6 +23,8 @@
                          </div>
                      </div>
                      <div class="table-responsive table-responsive-data2">
+                        <?=form_open('', array('id'=>'ujian'), array('id'=> "", 'random_secure' => 'sasd'));?>
+                        <?=form_close();?>
                          <table id="table_list" class="display text-center">
                              <thead>
                                  <tr>

@@ -2700,6 +2700,7 @@ class Tes_online extends CI_Controller
 		$paket_soal_id = base64_decode(urldecode($id_paket_soal));
 
 		$data = $this->tes->get_ujian_detail($sesi_pelaksana_id, $paket_soal_id);
+		// echo $this->db->last_query();die;
 		$sesi = $this->tes->get_sesi_pelaksana_by_id($sesi_pelaksana_id);
 
 		$total_soal = $this->tes->get_total_soal($paket_soal_id);

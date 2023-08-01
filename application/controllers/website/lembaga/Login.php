@@ -38,7 +38,8 @@ class Login extends CI_Controller {
                     'lembaga_user_name' => $data['login_admin'][0]['lembaga_user_name'],
                     'username' => $data['login_admin'][0]['username'],
                     'lembaga_user_email' => $data['login_admin'][0]['lembaga_user_email'],
-                    'has_login' => 1
+                    'has_login' => 1,
+                    'has_login_user' => 1
             );
 
             $this->session->set_userdata($newdata);
