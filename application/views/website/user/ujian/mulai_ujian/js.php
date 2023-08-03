@@ -6,6 +6,7 @@
         document.getElementById("info_mulai").style.display = "";
         document.getElementById("app").style.display = "";
         document.getElementById("mulai_tes").style.display = "none";
+        generateWadahSoal();
         startTimer();
     }
     function back_dashboard(){
@@ -60,6 +61,16 @@
         )}</span>
         </div>
     `;
+
+    function generateWadahSoal(){
+        var id_sesi_pelaksana = document.getElementById("id_sesi_pelaksana").innerHTML;
+        var enkrip = document.getElementById("enkrip").innerHTML;
+        $.ajax({
+            url: base_url + "ujian/wadah/" + id_sesi_pelaksana + "/" + enkrip
+        }).done(function( data ) {
+            console.log(data);
+        });
+    }
 
     function onTimesUp() {
         clearInterval(timerInterval);

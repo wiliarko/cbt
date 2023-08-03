@@ -143,6 +143,90 @@ class Ujian extends CI_Controller
     |
     */
 
+	public function generate_wadah_soal($id_sesi_pelaksana, $random_secure){
+		$data_ujian = [];
+		$bank_soal = [];
+		$data = [];
+		try {
+			$sesi_pelaksana_id = base64_decode(urldecode($id_sesi_pelaksana));
+
+			$sesi_detail = $this->tes->get_sesi_pelaksanaan_selected($sesi_pelaksana_id); //Get Sesi Pelaksanaan
+			if (empty($sesi_detail)) {
+				echo "Sesi pelaksanaan ujian telah berakhir!";
+			}
+
+			$sesi_pelaksanaan_user = $this->tes->get_sesi_pelaksanaan_user_by_sesi($sesi_pelaksana_id, $this->session->userdata('user_id'), 1); //Check sesi pelaksanaan user
+			if (empty($sesi_pelaksanaan_user)) {
+				echo "Anda tidak terdaftar dalam sesi ujian ini!";
+			}
+
+			$paket_soal_id = $sesi_detail->paket_soal_id;
+			$paket_soal = $this->tes->get_paket_soal_sesi_by_id($paket_soal_id); //Get Paket Soal
+			if (empty($paket_soal)) {
+				echo "Paket soal ujian tidak ditemukan. Hubungi admin!";
+			}
+
+			$ujian_data = $this->tes->get_checking_ujian_non_buku($sesi_pelaksana_id, $paket_soal_id, $this->session->userdata('user_id')); //CEK SEBELUMNYA UDH PERNAH TES ATAU BELUM
+			$audio_limit = $paket_soal->visual_limit;
+		} catch (Exception $e) {
+			echo "Terjadi kesalahan saat membuka ujian. Silahkan membuka ulang tes anda kembali <i>atau</i> Jika daftar ujian anda hilang silahkan LOGOUT dan LOGIN ulang!";
+		}
+
+		if (empty($ujian_data)) { //jika wadah untuk pemilihan soal dan jawaban belum ada
+			try {
+				$this->db->trans_begin();
+				$komposisi_soal = $this->tes->get_komposisi_soal_by_id($sesi_pelaksana_id, $paket_soal_id); //Ambil bank soal
+
+				$data_ujian['sesi_pelaksanaan_id'] = $sesi_pelaksana_id;
+				$data_ujian['paket_soal_id'] = $paket_soal_id;
+				$data_ujian['user_id'] = $this->session->userdata('user_id');
+				$data_ujian['user_no'] = $this->session->userdata('no_peserta');
+				$data_ujian['user_name'] = $this->session->userdata('peserta_name');
+				$data_ujian['user_email'] = $this->session->userdata('username');
+
+				//Set tanggal jam mulai dan berakhir
+				$now = date("Y-m-d H:i:s");
+				$data_ujian['tgl_mulai'] = $now;
+				$data_ujian['tgl_selesai'] = date("Y-m-d H:i:s", strtotime($now . ' + ' . $sesi_detail->lama_pengerjaan . ' minutes'));
+
+				foreach ($komposisi_soal as $val_komposisi) { //Membuat komposisi soal
+					$bank_soal[$val_komposisi->id_group_soal] = $this->tes->get_bank_soal_ujian($val_komposisi->paket_soal_id, $val_komposisi->id_group_soal, $val_komposisi->total_soal);
+				}
+
+				$list_id_soal	= "";
+				$list_jw_soal 	= "";
+				if (!empty($bank_soal)) {
+					foreach ($bank_soal as $key_soal => $val_soal) { //membuat wadah untuk list soal dan tempat jawabannya
+						$group_soal_key = $key_soal;
+						foreach ($val_soal as $val_deep_soal) {
+							$list_id_soal .= $group_soal_key . "|" . $val_deep_soal['bank_soal_id'] . ",";
+							$list_jw_soal .= $group_soal_key . "|" . $val_deep_soal['bank_soal_id'] . "||N|0|0,";
+						}
+					}
+				}
+
+				$list_id_soal = substr($list_id_soal, 0, -1);
+				$list_jw_soal = substr($list_jw_soal, 0, -1);
+				$data_ujian['list_soal'] = $list_id_soal;
+				$data_ujian['list_jawaban'] = $list_jw_soal;
+				$data_ujian['created_datetime'] = date('Y-m-d H:i:s');
+
+				$tbl_ujian = $this->tbl_ujian;
+				$input_docker_soal = $this->general->input_data($tbl_ujian, $data_ujian);
+
+				if ($input_docker_soal && $this->db->trans_status() !== FALSE) { //jika data tempat ujian sudah terbuat
+					$this->db->trans_commit();
+					echo "berhasil";
+				} else {
+					$this->db->trans_rollback();
+					echo "Terjadi kesalahan saat persiapan ujian silahkan ulangi lagi!";
+				}
+			} catch (Exception $e) {
+				echo "Terjadi kesalahan saat membuka ujian. Silahkan membuka ulang tes anda kembali <i>atau</i> Jika daftar ujian anda hilang silahkan LOGOUT dan LOGIN ulang!";
+			}
+		}
+	}
+
 	public function portal_tes($id_sesi_pelaksana, $random_secure)
 	{
 		//Cheking IP
@@ -620,8 +704,7 @@ class Ujian extends CI_Controller
 				// Simpan jawaban
 				$tbl_ujian = $this->tbl_ujian;
 				$this->general->update_data($tbl_ujian, $d_simpan, $id_tes);
-				echo "berhasil";die;
-				
+				echo "berhasil";
 			}
 		}
 	}

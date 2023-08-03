@@ -145,15 +145,15 @@ class Tes_online_model extends CI_Model
 
     public function get_paket_soal_by_id($paket_data_id)
     {
-        if(file_exists(APPPATH."../tmp/paket_soal/by_id_".$paket_data_id.".txt")){
-            $data = json_decode(file_get_contents(APPPATH."../tmp/paket_soal/by_id_".$paket_data_id.".txt"));
-            return $data;
+        $cache=$this->get_from_file("../tmp/paket_soal/by_id_".$paket_data_id.".txt");
+        if($cache){
+            return $cache;
         }else{
-            $this->load->helper('file');
             $hasil = $this->db->select('*')
             ->get_where('v_paket_soal', array('paket_soal_id' => $paket_data_id, 'is_enable' => 1))->row();
             
-            write_file(APPPATH."../tmp/paket_soal/by_id_".$paket_data_id.".txt", json_encode($hasil));
+            $this->save_to_file($hasil,"../tmp/paket_soal/by_id_".$paket_data_id.".txt");
+            
             return $hasil;
         }
     }
@@ -294,7 +294,30 @@ class Tes_online_model extends CI_Model
 
     public function get_paket_soal_sesi_by_id($paket_soal_id)
     {
-        return $this->db->get_where('v_paket_soal', array('paket_soal_id' => $paket_soal_id, 'is_enable' => 1))->row();
+        $now = date('Y-m-d H:i:s');
+        
+        if(file_exists(APPPATH."../tmp/sesi_pelaksanaan/get_paket_soal_sesi_by_id_".$paket_soal_id.".txt")){
+            $data = json_decode(file_get_contents(APPPATH."../tmp/sesi_pelaksanaan/get_paket_soal_sesi_by_id_".$paket_soal_id.".txt"));
+            if($data->tgl >= strtotime($now)){
+                return $data->input;
+            }else{
+                $this->load->helper('file');
+                $hasil = $this->db->get_where('v_paket_soal', array('paket_soal_id' => $paket_soal_id, 'is_enable' => 1))->row();
+            
+                $data_save=array("tgl"=>strtotime("+10 minutes"),"input"=>$hasil);
+                write_file(APPPATH."../tmp/sesi_pelaksanaan/get_paket_soal_sesi_by_id_".$paket_soal_id.".txt", json_encode($data_save));
+                return $hasil;
+            }
+        }else{
+            $this->load->helper('file');
+            $hasil = $this->db->get_where('v_paket_soal', array('paket_soal_id' => $paket_soal_id, 'is_enable' => 1))->row();
+            
+            $data_save=array("tgl"=>strtotime("+10 minutes"),"input"=>$hasil);
+            write_file(APPPATH."../tmp/sesi_pelaksanaan/get_paket_soal_sesi_by_id_".$paket_soal_id.".txt", json_encode($data_save));
+            return $hasil;
+        }
+
+        // return $this->db->get_where('v_paket_soal', array('paket_soal_id' => $paket_soal_id, 'is_enable' => 1))->row();
     }
 
     public function get_group_peserta()
@@ -380,7 +403,32 @@ class Tes_online_model extends CI_Model
 
     public function get_komposisi_soal_by_id($sesi_pelaksana_id, $paket_soal_id)
     {
-        $query = $this->db->query("SELECT
+        $now = date('Y-m-d H:i:s');
+        
+        if(file_exists(APPPATH."../tmp/sesi_pelaksanaan/get_komposisi_soal_by_id_".$sesi_pelaksana_id."_".$paket_soal_id.".txt")){
+            $data = json_decode(file_get_contents(APPPATH."../tmp/sesi_pelaksanaan/get_komposisi_soal_by_id_".$sesi_pelaksana_id."_".$paket_soal_id.".txt"));
+            if($data->tgl >= strtotime($now)){
+                return $data->input;
+            }else{
+                $this->load->helper('file');
+                $hasil = $this->db->query("SELECT
+                    T1.*,
+                    T2.id AS sesi_pelaksanaan_komposisi_id,
+                    T2.sesi_pelaksanaan_id,
+                    T2.total_soal
+                FROM v_komposisi_soal AS T1
+                JOIN sesi_pelaksanaan_komposisi AS T2 ON T2.group_soal_id = T1.id_group_soal
+                WHERE T2.sesi_pelaksanaan_id = '" . $sesi_pelaksana_id . "' AND
+                T1.paket_soal_id = '" . $paket_soal_id . "'
+                AND T2.is_enable = 1")->result();
+            
+                $data_save=array("tgl"=>strtotime("+10 minutes"),"input"=>$hasil);
+                write_file(APPPATH."../tmp/sesi_pelaksanaan/get_komposisi_soal_by_id_".$sesi_pelaksana_id."_".$paket_soal_id.".txt", json_encode($data_save));
+                return $hasil;
+            }
+        }else{
+            $this->load->helper('file');
+            $hasil = $this->db->query("SELECT
                 T1.*,
                 T2.id AS sesi_pelaksanaan_komposisi_id,
                 T2.sesi_pelaksanaan_id,
@@ -389,8 +437,24 @@ class Tes_online_model extends CI_Model
             JOIN sesi_pelaksanaan_komposisi AS T2 ON T2.group_soal_id = T1.id_group_soal
             WHERE T2.sesi_pelaksanaan_id = '" . $sesi_pelaksana_id . "' AND
 			T1.paket_soal_id = '" . $paket_soal_id . "'
-            AND T2.is_enable = 1");
-        return $query->result();
+            AND T2.is_enable = 1")->result();
+            
+            $data_save=array("tgl"=>strtotime("+10 minutes"),"input"=>$hasil);
+            write_file(APPPATH."../tmp/sesi_pelaksanaan/get_komposisi_soal_by_id_".$sesi_pelaksana_id."_".$paket_soal_id.".txt", json_encode($data_save));
+            return $hasil;
+        }
+
+        // $query = $this->db->query("SELECT
+        //         T1.*,
+        //         T2.id AS sesi_pelaksanaan_komposisi_id,
+        //         T2.sesi_pelaksanaan_id,
+        //         T2.total_soal
+        //     FROM v_komposisi_soal AS T1
+        //     JOIN sesi_pelaksanaan_komposisi AS T2 ON T2.group_soal_id = T1.id_group_soal
+        //     WHERE T2.sesi_pelaksanaan_id = '" . $sesi_pelaksana_id . "' AND
+		// 	T1.paket_soal_id = '" . $paket_soal_id . "'
+        //     AND T2.is_enable = 1");
+        // return $query->result();
     }
 
     public function get_komposisi_soal_by_paket($paket_soal_id)
@@ -479,12 +543,28 @@ class Tes_online_model extends CI_Model
 
     public function get_soal_by_id($paket_soal_id, $bank_soal_id)
     {
-        return $this->db->select('bank_soal_id, paket_soal_id, group_mode_jwb_id, group_mode_jwb_name, is_acak_soal, acak_soal
-                                ,is_acak_jawaban, acak_jawaban, is_opsi_jawaban, tipe_opsi_jawaban, no_soal, bank_soal_name, kata_kunci, tipe_kesulitan_id
-                                ,tipe_kesulitan_name, file, tipe_file, group_soal_id, bacaan_soal_id, isi_bacaan_soal, 
-                                group_soal_name, group_soal_petunjuk, bacaan_soal_name, group_soal_audio, group_soal_tipe_audio
-                                ,url_pembahasan, pembahasan, timer')
+        $cache=$this->get_from_file("../tmp/paket_soal/get_soal_by_id_".$paket_soal_id."_".$bank_soal_id.".txt");
+        if($cache){
+            return $cache;
+        }else{
+            $hasil = $this->db->select('bank_soal_id, paket_soal_id, group_mode_jwb_id, group_mode_jwb_name, is_acak_soal, acak_soal
+                ,is_acak_jawaban, acak_jawaban, is_opsi_jawaban, tipe_opsi_jawaban, no_soal, bank_soal_name, kata_kunci, tipe_kesulitan_id
+                ,tipe_kesulitan_name, file, tipe_file, group_soal_id, bacaan_soal_id, isi_bacaan_soal, 
+                group_soal_name, group_soal_petunjuk, bacaan_soal_name, group_soal_audio, group_soal_tipe_audio
+                ,url_pembahasan, pembahasan, timer')
             ->get_where('v_bank_soal', array('paket_soal_id' => $paket_soal_id, 'bank_soal_id' => $bank_soal_id, 'is_enable' => 1))->row();
+            
+            $this->save_to_file($hasil,"../tmp/paket_soal/get_soal_by_id_".$paket_soal_id."_".$bank_soal_id.".txt");
+            
+            return $hasil;
+        }
+
+        // return $this->db->select('bank_soal_id, paket_soal_id, group_mode_jwb_id, group_mode_jwb_name, is_acak_soal, acak_soal
+        //                         ,is_acak_jawaban, acak_jawaban, is_opsi_jawaban, tipe_opsi_jawaban, no_soal, bank_soal_name, kata_kunci, tipe_kesulitan_id
+        //                         ,tipe_kesulitan_name, file, tipe_file, group_soal_id, bacaan_soal_id, isi_bacaan_soal, 
+        //                         group_soal_name, group_soal_petunjuk, bacaan_soal_name, group_soal_audio, group_soal_tipe_audio
+        //                         ,url_pembahasan, pembahasan, timer')
+        //     ->get_where('v_bank_soal', array('paket_soal_id' => $paket_soal_id, 'bank_soal_id' => $bank_soal_id, 'is_enable' => 1))->row();
     }
 
     public function get_jawaban_by_id($bank_soal_id, $paket_soal_id)
@@ -502,10 +582,37 @@ class Tes_online_model extends CI_Model
     {
         $paket_acakan_jwb = $this->get_paket_soal_by_id($paket_soal_id);
         $soal_acakan_jwb = $this->get_soal_by_id($paket_soal_id, $bank_soal_id);
-        $order = $paket_acakan_jwb->is_acak_jawaban == 1 && $soal_acakan_jwb->is_acak_jawaban == 1 ? 'RAND()' : 'order ASC, id ASC';
-        return $this->db->select('id, bank_soal_id, order, name, score, is_key')
-            ->order_by($order)
+        $order = $paket_acakan_jwb->is_acak_jawaban == 1 && $soal_acakan_jwb->is_acak_jawaban == 1 ? 'rand' : 'no';
+        // $order = $paket_acakan_jwb->is_acak_jawaban == 1 && $soal_acakan_jwb->is_acak_jawaban == 1 ? 'RAND()' : 'order ASC, id ASC';
+
+        $cache=$this->get_from_file("../tmp/paket_soal/get_jawaban_by_id_user_".$bank_soal_id."_".$paket_soal_id.".txt");
+        
+        if($cache){
+            if($order=="rand"){
+                shuffle($cache);
+            }
+            return $cache;
+        }else{
+            $hasil = $this->db->select('id, bank_soal_id, order, name, score, is_key')
+            ->order_by("order ASC, id ASC")
             ->get_where('jawaban', array('bank_soal_id' => $bank_soal_id, 'is_enable' => 1))->result();
+            
+            $this->save_to_file($hasil,"../tmp/paket_soal/get_jawaban_by_id_user_".$bank_soal_id."_".$paket_soal_id.".txt");
+            
+            return $hasil;
+        }
+        
+        // return $this->db->select('id, bank_soal_id, order, name, score, is_key')
+        //     ->order_by($order)
+        //     ->get_where('jawaban', array('bank_soal_id' => $bank_soal_id, 'is_enable' => 1))->result();
+
+        // $paket_acakan_jwb = $this->get_paket_soal_by_id($paket_soal_id);
+        // $soal_acakan_jwb = $this->get_soal_by_id($paket_soal_id, $bank_soal_id);
+        // $order = $paket_acakan_jwb->is_acak_jawaban == 1 && $soal_acakan_jwb->is_acak_jawaban == 1 ? 'RAND()' : 'order ASC, id ASC';
+        
+        // return $this->db->select('id, bank_soal_id, order, name, score, is_key')
+        //     ->order_by($order)
+        //     ->get_where('jawaban', array('bank_soal_id' => $bank_soal_id, 'is_enable' => 1))->result();
     }
 
     public function get_jawaban_by_id_pembahasan($bank_soal_id, $paket_soal_id)
@@ -914,9 +1021,24 @@ class Tes_online_model extends CI_Model
 
     public function get_ujian_list_user($pc_urut_soal_jwb, $pc_urut_soal_id, $paket_soal_id)
     {
+        $now = date('Y-m-d H:i:s');
+        
         if(file_exists(APPPATH."../tmp/bank_soal/".$pc_urut_soal_id."_".$paket_soal_id.".txt")){
-            $data = file_get_contents(APPPATH."../tmp/bank_soal/".$pc_urut_soal_id."_".$paket_soal_id.".txt");
-            return json_decode($data);    
+            $data = json_decode(file_get_contents(APPPATH."../tmp/bank_soal/".$pc_urut_soal_id."_".$paket_soal_id.".txt"));
+            if($data->tgl >= strtotime($now)){
+                return $data->input;
+            }else{
+                $this->load->helper('file');
+                $this->db->select("*, {$pc_urut_soal_jwb} AS jawaban");
+                $this->db->from('v_bank_soal');
+                $this->db->where('bank_soal_id', $pc_urut_soal_id);
+                $this->db->where('paket_soal_id', $paket_soal_id);
+                $this->db->where('is_enable', 1);
+                $hasil = $this->db->get()->row();
+                $data_save=array("tgl"=>strtotime("+10 minutes"),"input"=>$hasil);
+                write_file(APPPATH."../tmp/bank_soal/".$pc_urut_soal_id."_".$paket_soal_id.".txt", json_encode($data_save));
+                return $hasil;
+            }
         }else{
             $this->load->helper('file');
             $this->db->select("*, {$pc_urut_soal_jwb} AS jawaban");
@@ -925,7 +1047,8 @@ class Tes_online_model extends CI_Model
             $this->db->where('paket_soal_id', $paket_soal_id);
             $this->db->where('is_enable', 1);
             $hasil = $this->db->get()->row();
-            write_file(APPPATH."../tmp/bank_soal/".$pc_urut_soal_id."_".$paket_soal_id.".txt", json_encode($hasil));
+            $data_save=array("tgl"=>strtotime("+10 minutes"),"input"=>$hasil);
+            write_file(APPPATH."../tmp/bank_soal/".$pc_urut_soal_id."_".$paket_soal_id.".txt", json_encode($data_save));
             return $hasil;
         }
     }
@@ -1243,5 +1366,25 @@ class Tes_online_model extends CI_Model
         } else {
             return null;
         }
+    }
+
+    public function get_from_file($path){
+        $now = date('Y-m-d H:i:s');
+        if(file_exists(APPPATH.$path)){
+            $data = json_decode(file_get_contents(APPPATH.$path));
+            if($data->tgl >= strtotime($now)){
+                return $data->input;
+            }else{
+                return false;
+            }
+        }else{
+            return false;
+        }
+    }
+
+    public function save_to_file($data,$path){
+        $this->load->helper('file');
+        $data_save=array("tgl"=>strtotime("+10 minutes"),"input"=>$data);
+        write_file(APPPATH.$path, json_encode($data_save));
     }
 }
