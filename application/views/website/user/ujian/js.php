@@ -502,6 +502,8 @@
             success: function(data) {
                 if (data.status == "gagal") {
                     alert("Gagal menyimpan jawaban. Mohon ulangi pilih jawaban anda kembali!");
+                }else{
+                    selesai();
                 }
             },
             error: function(request, status, error) {
@@ -659,12 +661,13 @@
     function done_soal() {
         //simpan();
         if (confirm('Yakin ingin mengakhiri tes?')) {
-            selesai();
+            simpan_db();
         }
     }
 
     function selesai() {
         //simpan();
+        
         $.ajax({
             type: "POST",
             url: base_url + "website/user/Ujian/simpan_akhir",
@@ -672,7 +675,7 @@
                 id: id_tes
             },
             beforeSend: function() {
-                simpan_db();
+                // simpan_db();
             },
             success: function(r) {
                 if (r.status) {
@@ -704,7 +707,8 @@
             swal("Informasi", "Mengalihkan", "info");
         }, 2000);
         setTimeout(() => {
-            selesai();
+            // selesai();
+            simpan_db();
         }, 2500);
     }
 </script>
